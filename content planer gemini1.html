@@ -2262,14 +2262,21 @@
                     const email = loginEmailInput.value;
                     const password = loginPasswordInput.value;
 
+                    // Re-load team members from localStorage just in case it was updated by signup
+                    const savedTeamMembers = localStorage.getItem('cpiTeamMembers');
+                    if (savedTeamMembers) {
+                        teamMembers = JSON.parse(savedTeamMembers);
+                    }
+
                     console.log('Attempting login with:');
                     console.log('Email:', email);
                     console.log('Password:', password);
-                    console.log('Available team members:', teamMembers);
+                    console.log('Available team members:', JSON.stringify(teamMembers));
 
                     const user = teamMembers.find(member => member.email === email && member.password === password);
 
                     if (user) {
+                        console.log('Login successful for user:', user);
                         appSettings.account.name = user.name;
                         appSettings.account.email = user.email;
                         appSettings.account.role = user.role;
@@ -2290,16 +2297,18 @@
                     const email = document.getElementById('signup-email').value;
                     const password = document.getElementById('signup-password').value;
 
-                    const adminExists = teamMembers.some(member => member.role === 'Admin');
-                    const emailAlreadyRegistered = teamMembers.some(member => member.email === email);
+                    // Always load the latest teamMembers from storage before checking
+                    const currentTeamMembers = JSON.parse(localStorage.getItem('cpiTeamMembers') || '[]');
+                    const adminExists = currentTeamMembers.some(member => member.role === 'Admin');
+                    const emailAlreadyRegistered = currentTeamMembers.some(member => member.email === email);
 
                     if (email === INITIAL_ADMIN_EMAIL) {
+                        if (emailAlreadyRegistered) {
+                             alert('Akun dengan email ini sudah terdaftar. Silakan login.');
+                             showLoginForm();
+                             return;
+                        }
                         if (!adminExists) {
-                            if (emailAlreadyRegistered) {
-                                alert('Email ini sudah terdaftar sebagai admin utama. Silakan login.');
-                                showLoginForm();
-                                return;
-                            }
                             const newAdmin = {
                                 id: Date.now(),
                                 name: name,
@@ -2309,8 +2318,8 @@
                                 status: 'Aktif',
                                 color: generateRandomColor()
                             };
-                            teamMembers.push(newAdmin);
-                            saveSettings();
+                            teamMembers.push(newAdmin); // Update the in-memory array
+                            saveSettings(); // Save the updated array to localStorage
                             alert(`Selamat! Akun admin utama Anda berhasil dibuat. Silakan login dengan email dan kata sandi yang Anda daftarkan.`);
                             showLoginForm(); // Switch back to login form
                         } else {
